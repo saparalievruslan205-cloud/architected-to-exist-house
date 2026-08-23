@@ -7,7 +7,7 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 
 export const metadata: Metadata = {
   title: 'ARCHITECTED TO EXIST — House 01',
-  description: 'A scroll-driven procedural 3D construction presentation for a modern home.',
+  description: 'A scroll-controlled construction film for a modern home.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
