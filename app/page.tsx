@@ -74,6 +74,10 @@ export default function Home() {
   }, [facade, roof, layout]);
 
   useEffect(() => {
+    if (heroActive) videoRef.current?.load();
+  }, [heroActive]);
+
+  useEffect(() => {
     const hero = heroRef.current;
     if (!hero) return;
 
