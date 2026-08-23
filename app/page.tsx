@@ -59,6 +59,7 @@ export default function Home() {
   const structureRef = useRef<HTMLDivElement>(null);
   const finalRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoPrimedRef = useRef(false);
   const [heroActive, setHeroActive] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [facade, setFacade] = useState<ChoiceId>('timber');
@@ -85,6 +86,15 @@ export default function Home() {
       const value = Math.min(Math.max(progress, 0), 1);
       scrollState.progress = value;
       const video = videoRef.current;
+      if (video && !reduced && video.readyState === 0 && !videoPrimedRef.current) {
+        videoPrimedRef.current = true;
+        void video.play().then(() => {
+          video.pause();
+          if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = value * video.duration;
+        }).catch(() => {
+          videoPrimedRef.current = false;
+        });
+      }
       if (video && Number.isFinite(video.duration) && video.duration > 0) {
         const targetTime = value * video.duration;
         if (Math.abs(video.currentTime - targetTime) > 0.025) {
