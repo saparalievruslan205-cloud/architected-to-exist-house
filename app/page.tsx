@@ -60,6 +60,9 @@ export default function Home() {
   const finalRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoPrimedRef = useRef(false);
+  const videoTargetRef = useRef(0);
+  const videoRafRef = useRef<number | null>(null);
+  const smoothSeekRef = useRef<() => void>(() => undefined);
   const blobUrlRef = useRef<string | null>(null);
   const [videoSrc, setVideoSrc] = useState('/house-build.mp4');
   const [heroActive, setHeroActive] = useState(true);
@@ -102,25 +105,54 @@ export default function Home() {
     const hero = heroRef.current;
     if (!hero) return;
 
+    const smoothSeek = () => {
+      if (reduced) {
+        const video = videoRef.current;
+        if (video && Number.isFinite(video.duration) && video.duration > 0) video.currentTime = videoTargetRef.current;
+        return;
+      }
+      if (videoRafRef.current !== null) return;
+
+      const tick = () => {
+        const video = videoRef.current;
+        if (!video || !Number.isFinite(video.duration) || video.duration <= 0) {
+          videoRafRef.current = null;
+          return;
+        }
+
+        const target = Math.min(Math.max(videoTargetRef.current, 0), video.duration);
+        const delta = target - video.currentTime;
+        if (Math.abs(delta) <= 0.008) {
+          video.currentTime = target;
+          videoRafRef.current = null;
+          return;
+        }
+
+        video.currentTime += delta * 0.12;
+        videoRafRef.current = requestAnimationFrame(tick);
+      };
+
+      videoRafRef.current = requestAnimationFrame(tick);
+    };
+
+    smoothSeekRef.current = smoothSeek;
+
     const updateUi = (progress: number) => {
       const value = Math.min(Math.max(progress, 0), 1);
       scrollState.progress = value;
       const video = videoRef.current;
+      if (video && Number.isFinite(video.duration) && video.duration > 0) {
+        videoTargetRef.current = value * video.duration;
+        smoothSeek();
+      }
       if (video && !reduced && value > 0.005 && video.readyState === 0 && !videoPrimedRef.current) {
         videoPrimedRef.current = true;
         void video.play().then(() => {
           video.pause();
-          if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = value * video.duration;
+          smoothSeek();
         }).catch(() => {
           videoPrimedRef.current = false;
         });
-      }
-      if (video && Number.isFinite(video.duration) && video.duration > 0) {
-        const targetTime = value * video.duration;
-        if (Math.abs(video.currentTime - targetTime) > 0.025) {
-          video.currentTime = targetTime;
-          if (Math.abs(video.currentTime - targetTime) > 0.1 && typeof video.fastSeek === 'function') video.fastSeek(targetTime);
-        }
       }
       if (progressBarRef.current) progressBarRef.current.style.height = `${value * 100}%`;
       if (progressTextRef.current) progressTextRef.current.textContent = `${String(Math.round(value * 100)).padStart(3, '0')}%`;
@@ -165,6 +197,9 @@ export default function Home() {
     return () => {
       trigger.kill();
       observer.disconnect();
+      if (videoRafRef.current !== null) cancelAnimationFrame(videoRafRef.current);
+      videoRafRef.current = null;
+      smoothSeekRef.current = () => undefined;
     };
   }, [reduced]);
 
@@ -201,7 +236,7 @@ export default function Home() {
 
       <AnimatePresence>{menuOpen && <motion.nav id="mobile-menu" initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }} className="fixed inset-x-4 top-20 z-50 rounded-2xl border border-white/10 bg-[#091117]/95 p-5 shadow-2xl backdrop-blur-xl md:hidden" aria-label="Mobile"><div className="flex flex-col gap-5 text-xs uppercase tracking-[0.22em] text-white/70"><a href="#overview" onClick={() => setMenuOpen(false)}>Overview</a><a href="#specs" onClick={() => setMenuOpen(false)}>Specs</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Showcase</a><a href="#preorder" onClick={() => setMenuOpen(false)}>Brief</a></div></motion.nav>}</AnimatePresence>
 
-      <section id="overview" ref={heroRef} className="relative h-[300vh]"><div className="sticky top-0 h-screen overflow-hidden"><div className="relative h-full bg-[#050a0e]"><video ref={videoRef} className="absolute inset-0 h-full w-full object-cover object-center opacity-80" src={videoSrc} preload={heroActive ? 'auto' : 'none'} muted playsInline aria-hidden="true" onLoadedMetadata={(event) => { const video = event.currentTarget; if (Number.isFinite(video.duration) && video.duration > 0) video.currentTime = scrollState.progress * video.duration; }} /><div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(3,7,11,.74)_0%,rgba(3,7,11,.12)_34%,rgba(3,7,11,.28)_68%,rgba(3,7,11,.92)_100%)]" /><div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_45%,transparent_0%,rgba(3,7,11,.12)_48%,rgba(3,7,11,.82)_100%)]" /><div className="pointer-events-none absolute inset-0 z-[1] opacity-25 [background-image:linear-gradient(rgba(72,202,220,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(72,202,220,.07)_1px,transparent_1px)] [background-size:72px_72px]" /><div className="relative z-20 flex h-full flex-col justify-center px-5 pt-16 sm:px-10">
+      <section id="overview" ref={heroRef} className="relative h-[300vh]"><div className="sticky top-0 h-screen overflow-hidden"><div className="relative h-full bg-[#050a0e]"><video ref={videoRef} className="absolute inset-0 h-full w-full object-cover object-center opacity-80" src={videoSrc} preload={heroActive ? 'auto' : 'none'} muted playsInline aria-hidden="true" onLoadedMetadata={(event) => { const video = event.currentTarget; if (Number.isFinite(video.duration) && video.duration > 0) { videoTargetRef.current = scrollState.progress * video.duration; smoothSeekRef.current(); } }} /><div className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(3,7,11,.74)_0%,rgba(3,7,11,.12)_34%,rgba(3,7,11,.28)_68%,rgba(3,7,11,.92)_100%)]" /><div className="pointer-events-none absolute inset-0 z-[1] bg-[radial-gradient(circle_at_50%_45%,transparent_0%,rgba(3,7,11,.12)_48%,rgba(3,7,11,.82)_100%)]" /><div className="pointer-events-none absolute inset-0 z-[1] opacity-25 [background-image:linear-gradient(rgba(72,202,220,.07)_1px,transparent_1px),linear-gradient(90deg,rgba(72,202,220,.07)_1px,transparent_1px)] [background-size:72px_72px]" /><div className="relative z-20 flex h-full flex-col justify-center px-5 pt-16 sm:px-10">
         <div ref={orbitRef} className="pointer-events-none mx-auto max-w-5xl text-center transition-none"><p className="mb-6 text-[10px] uppercase tracking-[0.38em] text-cyan-200/80">Axiom Instruments — 01</p><h1 className="text-[clamp(3.3rem,11vw,9.6rem)] font-semibold leading-[0.84] tracking-[-0.09em]">ARCHITECTED<br /><span className="text-cyan-200">TO EXIST</span></h1><p className="mx-auto mt-8 max-w-xl text-sm leading-relaxed text-white/60 sm:text-base">A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p><div className="mt-8 flex flex-wrap justify-center gap-3"><a href="#specs" className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-cyan-200 px-5 py-3 text-[10px] font-bold uppercase tracking-[0.22em] text-[#061015] transition hover:bg-white">Technical readout <ArrowRight size={14} /></a><a href="#showcase" className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75 transition hover:border-cyan-200/60 hover:text-white">Configure the house <ChevronDown size={14} /></a></div></div>
         <div ref={structureRef} className="pointer-events-none absolute inset-x-5 top-[38%] mx-auto hidden max-w-6xl justify-between opacity-0 transition-none sm:inset-x-10 sm:flex"><div className="max-w-[240px] rounded-2xl border border-cyan-200/20 bg-[#07141b]/75 p-5 backdrop-blur-xl"><div className="mb-4 flex items-center gap-2 text-cyan-200"><LayersIcon /><span className="text-[10px] uppercase tracking-[0.25em]">Build layer 03</span></div><p className="text-2xl tracking-[-0.04em]">STRUCTURAL<br />FRAME</p><p className="mt-3 text-xs leading-relaxed text-white/45">Columns and slabs find their exact rhythm.</p></div><div className="mt-24 max-w-[240px] rounded-2xl border border-cyan-200/20 bg-[#07141b]/75 p-5 backdrop-blur-xl"><div className="mb-4 flex items-center gap-2 text-cyan-200"><Zap size={15} /><span className="text-[10px] uppercase tracking-[0.25em]">Build layer 05</span></div><p className="text-2xl tracking-[-0.04em]">PASSIVE<br />ENERGY</p><p className="mt-3 text-xs leading-relaxed text-white/45">Solar planes and thermal mass reduce the load.</p></div><div className="hidden max-w-[240px] rounded-2xl border border-cyan-200/20 bg-[#07141b]/75 p-5 backdrop-blur-xl lg:block"><div className="mb-4 flex items-center gap-2 text-cyan-200"><Cpu size={15} /><span className="text-[10px] uppercase tracking-[0.25em]">Build layer 06</span></div><p className="text-2xl tracking-[-0.04em]">INTELLIGENT<br />SYSTEMS</p><p className="mt-3 text-xs leading-relaxed text-white/45">Services stay visible until the final assembly.</p></div></div>
         <div ref={finalRef} className="pointer-events-none absolute inset-x-5 bottom-[17%] mx-auto max-w-6xl text-center opacity-0 sm:inset-x-10"><p className="text-[10px] uppercase tracking-[0.38em] text-cyan-200">Assembly complete</p><p className="mt-4 text-[clamp(2.8rem,8vw,7rem)] font-semibold leading-[0.86] tracking-[-0.08em]">BUILD COMPLETE</p><p className="mt-5 text-sm uppercase tracking-[0.3em] text-white/55">Your next address</p></div>
