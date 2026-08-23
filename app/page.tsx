@@ -90,7 +90,7 @@ export default function Home() {
       }
       if (progressBarRef.current) progressBarRef.current.style.height = `${value * 100}%`;
       if (progressTextRef.current) progressTextRef.current.textContent = `${String(Math.round(value * 100)).padStart(3, '0')}%`;
-      if (stageRef.current) stageRef.current.textContent = value < 0.3 ? '01 · BLUEPRINT — OPENING FRAME' : value < 0.7 ? '02 · BUILD FILM — CONSTRUCTION' : '03 · FINAL ADDRESS — INTERIOR';
+      if (stageRef.current) stageRef.current.textContent = value < 0.3 ? '01 · BLUEPRINT — OPENING FRAME' : value < 0.7 ? '02 · BUILD FILM — CONSTRUCTION' : '03 · FINAL ADDRESS — HANDOVER';
 
       const assembly = value < 0.3 ? 0 : Math.min((value - 0.3) / 0.4, 1);
       const final = value < 0.7 ? 0 : Math.min((value - 0.7) / 0.3, 1);
