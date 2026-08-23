@@ -77,13 +77,18 @@ export default function Home() {
   }, [facade, roof, layout]);
 
   useEffect(() => {
-    if (!heroActive || blobUrlRef.current) return;
+    if (blobUrlRef.current) return;
 
-    const controller = new AbortController();
-    void fetch('/house-build.mp4', { signal: controller.signal, credentials: 'same-origin', cache: 'force-cache' })
-      .then((response) => (response.ok ? response.blob() : null))
+    void fetch('/house-build.mp4', {
+      credentials: 'include',
+      cache: 'force-cache',
+      headers: { Range: 'bytes=0-10301321' },
+    })
+      .then((response) => {
+        return response.ok ? response.blob() : null;
+      })
       .then((blob) => {
-        if (!blob || controller.signal.aborted) return;
+        if (!blob) return;
         const url = URL.createObjectURL(blob);
         blobUrlRef.current = url;
         setVideoSrc(url);
@@ -91,9 +96,7 @@ export default function Home() {
       .catch(() => {
         // Keep the static source as a fallback when a browser blocks blob prefetching.
       });
-
-    return () => controller.abort();
-  }, [heroActive]);
+  }, []);
 
   useEffect(() => {
     const hero = heroRef.current;
