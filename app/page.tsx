@@ -84,8 +84,8 @@ export default function Home() {
       if (video && Number.isFinite(video.duration) && video.duration > 0) {
         const targetTime = value * video.duration;
         if (Math.abs(video.currentTime - targetTime) > 0.025) {
-          if (typeof video.fastSeek === 'function') video.fastSeek(targetTime);
-          else video.currentTime = targetTime;
+          video.currentTime = targetTime;
+          if (Math.abs(video.currentTime - targetTime) > 0.1 && typeof video.fastSeek === 'function') video.fastSeek(targetTime);
         }
       }
       if (progressBarRef.current) progressBarRef.current.style.height = `${value * 100}%`;
