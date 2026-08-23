@@ -63,6 +63,7 @@ export default function Home() {
   const videoTargetRef = useRef(0);
   const videoRafRef = useRef<number | null>(null);
   const smoothSeekRef = useRef<() => void>(() => undefined);
+  const lastReverseSeekRef = useRef(0);
   const blobUrlRef = useRef<string | null>(null);
   const [videoSrc, setVideoSrc] = useState('/house-build.mp4');
   const [heroActive, setHeroActive] = useState(true);
@@ -103,6 +104,7 @@ export default function Home() {
 
   useEffect(() => {
     const hero = heroRef.current;
+    const heroVideo = videoRef.current;
     if (!hero) return;
 
     const smoothSeek = () => {
@@ -123,12 +125,24 @@ export default function Home() {
         const target = Math.min(Math.max(videoTargetRef.current, 0), video.duration);
         const delta = target - video.currentTime;
         if (Math.abs(delta) <= 0.008) {
+          video.pause();
+          video.playbackRate = 1;
           video.currentTime = target;
           videoRafRef.current = null;
           return;
         }
 
-        video.currentTime += delta * 0.12;
+        if (delta > 0 && !video.seeking) {
+          video.playbackRate = Math.min(Math.max(delta * 2, 0.6), 8);
+          if (video.paused) void video.play().catch(() => undefined);
+        } else if (delta < 0) {
+          video.pause();
+          const now = performance.now();
+          if (!video.seeking && now - lastReverseSeekRef.current >= 42) {
+            video.currentTime += delta * 0.16;
+            lastReverseSeekRef.current = now;
+          }
+        }
         videoRafRef.current = requestAnimationFrame(tick);
       };
 
@@ -175,7 +189,14 @@ export default function Home() {
       }
     };
 
-    const observer = new IntersectionObserver(([entry]) => setHeroActive(entry.isIntersecting), { threshold: 0.01 });
+    const observer = new IntersectionObserver(([entry]) => {
+      setHeroActive(entry.isIntersecting);
+      if (!entry.isIntersecting) {
+        heroVideo?.pause();
+        if (videoRafRef.current !== null) cancelAnimationFrame(videoRafRef.current);
+        videoRafRef.current = null;
+      }
+    }, { threshold: 0.01 });
     observer.observe(hero);
 
     gsap.registerPlugin(ScrollTrigger);
@@ -197,6 +218,7 @@ export default function Home() {
     return () => {
       trigger.kill();
       observer.disconnect();
+      heroVideo?.pause();
       if (videoRafRef.current !== null) cancelAnimationFrame(videoRafRef.current);
       videoRafRef.current = null;
       smoothSeekRef.current = () => undefined;
