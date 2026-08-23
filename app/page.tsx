@@ -83,14 +83,30 @@ export default function Home() {
   useEffect(() => {
     if (blobUrlRef.current) return;
 
-    void fetch('/house-build.mp4', {
-      credentials: 'include',
-      cache: 'force-cache',
-      headers: { Range: 'bytes=0-10301321' },
-    })
-      .then((response) => {
-        return response.ok ? response.blob() : null;
-      })
+    const loadVideoBlob = async () => {
+      const singleFile = await fetch('/house-build.mp4', {
+        credentials: 'include',
+        cache: 'force-cache',
+        headers: { Range: 'bytes=0-10301321' },
+      });
+      if (singleFile.ok) return singleFile.blob();
+
+      // The direct Vercel upload API caps individual files at 3 MB. The
+      // production fallback is therefore uploaded as five byte-aligned parts
+      // and reassembled in memory before the video element starts scrubbing.
+      const partResponses = await Promise.all(
+        Array.from({ length: 5 }, (_, index) =>
+          fetch(`/house-build.part-${String(index + 1).padStart(2, '0')}.mp4`, {
+            cache: 'force-cache',
+          }),
+        ),
+      );
+      if (partResponses.some((response) => !response.ok)) return null;
+      const parts = await Promise.all(partResponses.map((response) => response.arrayBuffer()));
+      return new Blob(parts, { type: 'video/mp4' });
+    };
+
+    void loadVideoBlob()
       .then((blob) => {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
