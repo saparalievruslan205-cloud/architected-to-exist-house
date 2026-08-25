@@ -84,8 +84,8 @@ export default function Home() {
   const selectedRoof = roofOptions.find((item) => item.id === roof) ?? roofOptions[0];
   const selectedLayout = layoutOptions.find((item) => item.id === layout) ?? layoutOptions[0];
   const showcaseImage = facade === 'metal' || roof === 'green'
-    ? '/house-showcase-evening.jpg'
-    : '/house-showcase-day.jpg';
+    ? '/house-showcase-front-day.jpg'
+    : '/house-showcase-front-dusk.jpg';
   const showcaseOverlay = facade === 'stone'
     ? 'linear-gradient(145deg, rgba(19, 25, 25, 0.32), rgba(145, 121, 85, 0.18))'
     : facade === 'metal'
