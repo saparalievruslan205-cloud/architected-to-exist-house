@@ -16,6 +16,136 @@ button, input, textarea { font: inherit; }
 button { cursor: pointer; }
 ::selection { background: rgba(159, 238, 250, .28); color: white; }
 
+/* UI/UX polish for the editorial sections below the scroll film. The hero
+   remains intentionally untouched; these rules only improve the reading
+   rhythm once the construction sequence has finished. */
+main > section:not(#overview) {
+  position: relative;
+  isolation: isolate;
+}
+
+main > section:not(#overview)::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  content: '';
+  opacity: .52;
+  background-image: linear-gradient(rgba(144, 231, 239, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(144, 231, 239, .025) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: linear-gradient(to bottom, transparent, black 16%, black 84%, transparent);
+}
+
+#specs {
+  background-image: radial-gradient(circle at 14% 22%, rgba(79, 203, 220, .09), transparent 34%), linear-gradient(180deg, #050b10 0%, #07131a 100%) !important;
+}
+
+#specs > div > div:last-child {
+  position: relative;
+}
+
+#specs article {
+  position: relative;
+  overflow: hidden;
+  min-height: 238px;
+  border-color: rgba(150, 233, 240, .12);
+  background: linear-gradient(145deg, rgba(18, 43, 53, .78), rgba(5, 15, 21, .72));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 18px 50px rgba(0,0,0,.14);
+  transition: transform .45s cubic-bezier(.22,1,.36,1), border-color .45s ease, background .45s ease;
+}
+
+#specs article::after {
+  position: absolute;
+  right: -38px;
+  bottom: -58px;
+  width: 150px;
+  height: 150px;
+  content: '';
+  border: 1px solid rgba(141, 233, 241, .12);
+  border-radius: 999px;
+  box-shadow: 0 0 0 18px rgba(141, 233, 241, .025), 0 0 0 36px rgba(141, 233, 241, .016);
+}
+
+#specs article:hover {
+  transform: translateY(-7px);
+  border-color: rgba(154, 239, 246, .34);
+  background: linear-gradient(145deg, rgba(23, 59, 70, .84), rgba(7, 20, 27, .78));
+}
+
+#specs article > span {
+  box-shadow: 0 0 24px rgba(126, 235, 242, .1);
+}
+
+#showcase {
+  background-image: radial-gradient(circle at 85% 10%, rgba(203, 160, 97, .09), transparent 28%), linear-gradient(180deg, #071117 0%, #08151b 100%) !important;
+}
+
+#showcase .group {
+  box-shadow: 0 28px 90px rgba(0,0,0,.24);
+}
+
+#showcase .group::after {
+  position: absolute;
+  inset: 14px;
+  z-index: 5;
+  pointer-events: none;
+  content: '';
+  border: 1px solid rgba(202, 241, 241, .18);
+  border-radius: 20px;
+  opacity: .65;
+}
+
+#showcase fieldset {
+  padding: 1rem 0 1.1rem;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+#showcase fieldset:last-child { border-bottom: 0; }
+
+#showcase fieldset button {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,.025);
+}
+
+#showcase fieldset button::before {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: linear-gradient(105deg, rgba(155,239,245,.12), transparent 42%);
+  opacity: 0;
+  transition: opacity .35s ease;
+}
+
+#showcase fieldset button:hover::before,
+#showcase fieldset button[aria-pressed='true']::before { opacity: 1; }
+
+#showcase fieldset button[aria-pressed='true'] {
+  box-shadow: inset 3px 0 0 rgba(159, 239, 245, .88), 0 12px 28px rgba(0,0,0,.12);
+}
+
+#testimonial {
+  background-image: radial-gradient(circle at 76% 46%, rgba(89, 196, 211, .1), transparent 26%), linear-gradient(180deg, #03070b 0%, #061015 100%) !important;
+}
+
+#testimonial blockquote { text-wrap: balance; }
+
+#preorder {
+  background-image: linear-gradient(118deg, rgba(76, 204, 218, .08), transparent 40%), linear-gradient(180deg, #08171d 0%, #061016 100%) !important;
+}
+
+#preorder form {
+  box-shadow: 0 25px 90px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+#preorder input:focus, #preorder textarea:focus { box-shadow: 0 10px 22px -18px rgba(153, 240, 246, .9); }
+
+@media (max-width: 640px) {
+  main > section:not(#overview)::before { background-size: 48px 48px; }
+  #specs article { min-height: 205px; }
+  #showcase .group::after { inset: 9px; border-radius: 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
