@@ -154,3 +154,16 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 @media (prefers-reduced-transparency: reduce) { .axiom-header, .mobile-nav, .brief-form { background: #071117; backdrop-filter: none; } }
 @media (prefers-contrast: more) { :root { --axiom-text-muted: #e1edef; --axiom-border: rgba(255,255,255,.46); } .axiom-header, .mobile-nav, .brief-form { border-color: white; } }
+
+/* Light editorial palette: limestone, graphite, terracotta, sage. */
+:root { --axiom-bg: #f4f1eb; --axiom-surface: #fbfaf7; --axiom-surface-2: #e9e5dc; --axiom-text: #1d2928; --axiom-text-muted: #5b6866; --axiom-accent: #a95635; --axiom-ink: #fffaf3; --axiom-border: rgba(29,41,40,.16); --axiom-focus: #b86b3c; --axiom-shadow: 0 22px 72px rgba(53,48,40,.14), inset 0 1px 0 rgba(255,255,255,.8); }
+html, body, .axiom-page { background: var(--axiom-bg); color: var(--axiom-text); }
+::selection { background: rgba(169,86,53,.2); color: var(--axiom-text); }
+.axiom-header { border-bottom-color: rgba(29,41,40,.12); background: rgba(244,241,235,.82); box-shadow: 0 8px 30px rgba(53,48,40,.06); }
+.axiom-brand, .option b, .selection-summary > b, .note-wrap blockquote { color: var(--axiom-text); }
+.axiom-brand > span { border-color: rgba(169,86,53,.42); background: rgba(169,86,53,.1); color: var(--axiom-accent); }
+.axiom-brand i, .eyebrow, .hero-intro h1 em, .hero-progress strong, .progress-meter b, .spec-card > strong, .preview-kicker b, .preview-tag b, .preview-price i, .option i, .option em, .selection-summary a { color: var(--axiom-accent); }
+.desktop-nav a, .axiom-footer a { color: var(--axiom-text-muted); }
+.desktop-nav a:hover, .axiom-footer a:hover { color: var(--axiom-accent); }
+.menu-trigger { border-color: var(--axiom-border); background: rgba(255,255,255,.62); color: var(--axiom-text); }
+.mobile-nav { border-color: rgba(169,86,53,.32); background: rgba(251,250,247,.96); box-shadow: 0 24px 60px rgba(53,48,40,.16); }
