@@ -1,11 +1,8 @@
 'use client';
 
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import gsap from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowDown, ArrowRight, Check, ChevronDown, Compass, Cpu, Menu, MoveDown, Send, Sparkles, X, Zap } from 'lucide-react';
 import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { scrollState } from './scroll-state';
 import './production.css';
 
 const specs = [
@@ -37,6 +34,15 @@ type Option = { id: string; label: string; copy: string; delta: number };
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const selectionSpring = { type: 'spring' as const, bounce: 0, duration: 0.42 };
+const heroFrames = [
+  '/house-showcase-day.jpg',
+  '/house-showcase-front-dusk.jpg',
+  '/house-showcase-evening.jpg',
+] as const;
+
+type ConnectionWithSaveData = { saveData?: boolean };
+
+const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 
 function validate(form: FormData): FormErrors {
   const name = String(form.get('name') ?? '').trim();
@@ -50,20 +56,117 @@ function validate(form: FormData): FormErrors {
   return errors;
 }
 
-export default function ProductionHome() {
-  const reduceMotion = Boolean(useReducedMotion());
+function HeroSequence({ reduceMotion }: { reduceMotion: boolean }) {
   const heroRef = useRef<HTMLElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const seekFrameRef = useRef<number | null>(null);
-  const smoothFrameRef = useRef<number | null>(null);
-  const pendingProgressRef = useRef(0);
-  const smoothedProgressRef = useRef(0);
-  const lastSmoothTimeRef = useRef(0);
-  const pendingVideoTimeRef = useRef<number | null>(null);
-  const videoSeekInFlightRef = useRef(false);
+  const frameRefs = useRef<Array<HTMLImageElement | null>>([]);
+  const introRef = useRef<HTMLDivElement>(null);
   const progressBarRef = useRef<HTMLSpanElement>(null);
   const progressTextRef = useRef<HTMLSpanElement>(null);
   const stageRef = useRef<HTMLSpanElement>(null);
+  const [saveData] = useState(() => {
+    if (typeof navigator === 'undefined') return false;
+    const connection = (navigator as Navigator & { connection?: ConnectionWithSaveData }).connection;
+    return Boolean(connection?.saveData);
+  });
+
+  const staticMode = reduceMotion || saveData;
+
+  useEffect(() => {
+    if (staticMode) return;
+
+    let animationFrame = 0;
+    let lastPercent = -1;
+    let lastStage = -1;
+
+    const update = () => {
+      animationFrame = 0;
+      const hero = heroRef.current;
+      if (!hero) return;
+
+      const rect = hero.getBoundingClientRect();
+      const range = Math.max(hero.offsetHeight - window.innerHeight, 1);
+      const progress = clamp(-rect.top / range);
+      const firstBlend = clamp(progress / 0.48);
+      const secondBlend = clamp((progress - 0.48) / 0.52);
+      const opacities = [1 - firstBlend, firstBlend * (1 - secondBlend), secondBlend];
+
+      frameRefs.current.forEach((frame, index) => {
+        if (!frame) return;
+        frame.style.opacity = String(opacities[index]);
+        frame.style.transform = `scale(${1.045 - progress * 0.045 + index * 0.004}) translate3d(${(index - 1) * progress * 0.55}%, ${progress * -0.85}%, 0)`;
+      });
+
+      if (introRef.current) {
+        introRef.current.style.opacity = String(1 - clamp((progress - 0.72) / 0.28) * 0.24);
+        introRef.current.style.transform = `translate3d(0, ${progress * -20}px, 0)`;
+      }
+      if (progressBarRef.current) progressBarRef.current.style.transform = `scaleY(${progress})`;
+
+      const percent = Math.round(progress * 100);
+      if (percent !== lastPercent && progressTextRef.current) {
+        progressTextRef.current.textContent = `${String(percent).padStart(3, '0')}%`;
+        lastPercent = percent;
+      }
+      const stage = progress < 0.34 ? 0 : progress < 0.7 ? 1 : 2;
+      if (stage !== lastStage && stageRef.current) {
+        stageRef.current.textContent = [
+          '01 · DAYLIGHT — OPENING FRAME',
+          '02 · LIGHT — IN TRANSITION',
+          '03 · EVENING — FINAL VIEW',
+        ][stage];
+        lastStage = stage;
+      }
+    };
+    const scheduleUpdate = () => {
+      if (!animationFrame) animationFrame = requestAnimationFrame(update);
+    };
+
+    scheduleUpdate();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+    return () => {
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [staticMode]);
+
+  return <section id="overview" ref={heroRef} className={`hero-scroll ${staticMode ? 'reduced' : ''}`} aria-label="Architectural home study">
+    <div className="hero-sticky">
+      <div className="hero-frames" aria-hidden="true">
+        {heroFrames.map((src, index) => {
+          // Native layers are intentional: the browser composites them directly during scroll.
+          // eslint-disable-next-line @next/next/no-img-element
+          return <img
+            key={src}
+            ref={(element) => { frameRefs.current[index] = element; }}
+            className={`hero-frame ${index === heroFrames.length - 1 ? 'hero-frame-final' : ''}`}
+            src={src}
+            alt=""
+            decoding="async"
+            loading="eager"
+            fetchPriority={index === 0 ? 'high' : 'low'}
+          />;
+        })}
+      </div>
+      <div className="hero-overlay" />
+      <div className="hero-grid" />
+      <div className="hero-content">
+        <div ref={introRef} className="hero-intro">
+          <p className="eyebrow">Axiom concept study — 01</p>
+          <h1>ARCHITECTED<br /><em>TO EXIST</em></h1>
+          <p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p>
+          <div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div>
+        </div>
+        <div className="hero-progress" aria-hidden="true"><div><span>{staticMode ? 'Static architectural view' : 'Scroll to reveal the home'}</span><strong ref={stageRef}>01 · DAYLIGHT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>{staticMode ? '100%' : '000%'}</b><i><span ref={progressBarRef} /></i></div></div>
+        <div className="hero-scroll-hint" aria-hidden="true">Scroll <ArrowDown size={14} aria-hidden="true" /></div>
+      </div>
+    </div>
+  </section>;
+}
+
+export default function ProductionHome() {
+  const reduceMotion = Boolean(useReducedMotion());
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -92,90 +195,6 @@ export default function ProductionHome() {
     document.addEventListener('keydown', closeOnEscape);
     return () => { document.body.style.overflow = previousOverflow; document.removeEventListener('keydown', closeOnEscape); trigger?.focus(); };
   }, [menuOpen]);
-
-  useEffect(() => {
-    const hero = heroRef.current;
-    if (!hero) return;
-    const video = videoRef.current;
-    const flushVideoSeek = () => {
-      seekFrameRef.current = null;
-      const currentVideo = videoRef.current;
-      const target = pendingVideoTimeRef.current;
-      if (!currentVideo || target === null || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
-      if (videoSeekInFlightRef.current || currentVideo.seeking) return;
-      if (Math.abs(currentVideo.currentTime - target) < 1 / 30) {
-        pendingVideoTimeRef.current = null;
-        return;
-      }
-      pendingVideoTimeRef.current = null;
-      videoSeekInFlightRef.current = true;
-      currentVideo.currentTime = target;
-    };
-    const scheduleVideoSeek = () => {
-      if (seekFrameRef.current !== null) return;
-      seekFrameRef.current = requestAnimationFrame(flushVideoSeek);
-    };
-    const continueVideoSeek = () => {
-      videoSeekInFlightRef.current = false;
-      if (pendingVideoTimeRef.current !== null) scheduleVideoSeek();
-      if (Math.abs(pendingProgressRef.current - smoothedProgressRef.current) > .001) scheduleSmoothVideo();
-    };
-    function scheduleSmoothVideo() {
-      if (smoothFrameRef.current !== null) return;
-      smoothFrameRef.current = requestAnimationFrame((now) => {
-        smoothFrameRef.current = null;
-        const elapsed = Math.min(Math.max(now - lastSmoothTimeRef.current, 0), 64);
-        lastSmoothTimeRef.current = now;
-        const target = pendingProgressRef.current;
-        const delta = target - smoothedProgressRef.current;
-        const easing = 1 - Math.exp(-elapsed / 90);
-        const next = Math.abs(delta) < .001 ? target : smoothedProgressRef.current + delta * easing;
-        smoothedProgressRef.current = next;
-        const currentVideo = videoRef.current;
-        if (currentVideo && Number.isFinite(currentVideo.duration) && currentVideo.duration > 0) {
-          pendingVideoTimeRef.current = next * currentVideo.duration;
-          scheduleVideoSeek();
-        }
-        if (Math.abs(target - next) > .001) scheduleSmoothVideo();
-      });
-    }
-    const initializeVideoSeek = () => {
-      const currentVideo = videoRef.current;
-      if (!currentVideo || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
-      smoothedProgressRef.current = pendingProgressRef.current;
-      pendingVideoTimeRef.current = pendingProgressRef.current * currentVideo.duration;
-      scheduleVideoSeek();
-    };
-    const update = (raw: number) => {
-      const progress = Math.min(Math.max(raw, 0), 1);
-      scrollState.progress = progress;
-      if (progressBarRef.current) progressBarRef.current.style.transform = `scaleY(${progress})`;
-      if (progressTextRef.current) progressTextRef.current.textContent = `${String(Math.round(progress * 100)).padStart(3, '0')}%`;
-      if (stageRef.current) stageRef.current.textContent = progress < .3 ? '01 · BLUEPRINT — OPENING FRAME' : progress < .7 ? '02 · BUILD FILM — CONSTRUCTION' : '03 · FINAL ADDRESS — HANDOVER';
-      if (reduceMotion) return;
-      pendingProgressRef.current = progress;
-      scheduleSmoothVideo();
-    };
-    if (reduceMotion) { update(1); return undefined; }
-    gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.config({ limitCallbacks: true, ignoreMobileResize: true });
-    video?.addEventListener('loadedmetadata', initializeVideoSeek);
-    video?.addEventListener('seeked', continueVideoSeek);
-    const trigger = ScrollTrigger.create({ trigger: hero, start: 'top top', end: 'bottom bottom', onUpdate: (self) => update(self.progress) });
-    update(trigger.progress);
-    ScrollTrigger.refresh();
-    return () => {
-      trigger.kill();
-      video?.removeEventListener('loadedmetadata', initializeVideoSeek);
-      video?.removeEventListener('seeked', continueVideoSeek);
-      if (seekFrameRef.current !== null) cancelAnimationFrame(seekFrameRef.current);
-      if (smoothFrameRef.current !== null) cancelAnimationFrame(smoothFrameRef.current);
-      seekFrameRef.current = null;
-      smoothFrameRef.current = null;
-      pendingVideoTimeRef.current = null;
-      videoSeekInFlightRef.current = false;
-    };
-  }, [reduceMotion]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -206,7 +225,7 @@ export default function ProductionHome() {
       </header>
       <AnimatePresence>{menuOpen && <motion.nav ref={menuRef} id="mobile-menu" className="mobile-nav" aria-label="Mobile navigation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: .98 }} animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: .985 }} transition={reduceMotion ? { duration: .12 } : { type: 'spring', bounce: 0, duration: .32 }}><a href="#overview" onClick={() => setMenuOpen(false)}>Overview</a><a href="#specs" onClick={() => setMenuOpen(false)}>Technical readout</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Configure the house</a><a href="#brief" onClick={() => setMenuOpen(false)}>Start a build</a></motion.nav>}</AnimatePresence>
 
-      <section id="overview" ref={heroRef} className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`}><div className="hero-sticky"><video ref={videoRef} src="/house-build.mp4" poster="/house-showcase-day.jpg" preload="auto" muted playsInline aria-hidden="true" /><div className="hero-overlay" /><div className="hero-grid" /><div className="hero-content"><div className="hero-intro"><p className="eyebrow">Axiom concept study — 01</p><h1>ARCHITECTED<br /><em>TO EXIST</em></h1><p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p><div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div></div><div className="hero-progress"><div><span>Scroll to control film</span><strong ref={stageRef}>01 · BLUEPRINT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>000%</b><i><span ref={progressBarRef} /></i></div></div><div className="hero-scroll-hint">Scroll <ArrowDown size={14} aria-hidden="true" /></div></div></div></section>
+      <HeroSequence reduceMotion={reduceMotion} />
 
       <section id="specs" className="axiom-section specs-section"><div className="content-wrap"><p className="eyebrow">Technical readout</p><h2>Engineered<br />beyond tolerance.</h2><p className="section-copy">The house is measured twice: once as a system, and once as a feeling. Every layer is calibrated for light, comfort and long-term energy.</p><div className="spec-grid">{specs.map(([value, label, copy], index) => <motion.article key={label} className="spec-card" initial={reduceMotion ? false : { opacity: 0, y: 20 }} whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }} viewport={{ once: true, amount: .35 }} transition={{ ...selectionSpring, delay: index * .05 }}><span>{index === 0 ? <Compass size={17} aria-hidden="true" /> : index === 1 ? <Sparkles size={17} aria-hidden="true" /> : index === 2 ? <Zap size={17} aria-hidden="true" /> : <Cpu size={17} aria-hidden="true" />}</span><b>{value}</b><strong>{label}</strong><p>{copy}</p></motion.article>)}</div></div></section>
 
