@@ -34,15 +34,6 @@ type Option = { id: string; label: string; copy: string; delta: number };
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const selectionSpring = { type: 'spring' as const, bounce: 0, duration: 0.42 };
-const heroFrames = [
-  '/house-showcase-day.jpg',
-  '/house-showcase-front-dusk.jpg',
-  '/house-showcase-evening.jpg',
-] as const;
-
-type ConnectionWithSaveData = { saveData?: boolean };
-
-const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 
 function validate(form: FormData): FormErrors {
   const name = String(form.get('name') ?? '').trim();
@@ -56,109 +47,20 @@ function validate(form: FormData): FormErrors {
   return errors;
 }
 
-function HeroSequence({ reduceMotion }: { reduceMotion: boolean }) {
-  const heroRef = useRef<HTMLElement>(null);
-  const frameRefs = useRef<Array<HTMLImageElement | null>>([]);
-  const introRef = useRef<HTMLDivElement>(null);
-  const progressBarRef = useRef<HTMLSpanElement>(null);
-  const progressTextRef = useRef<HTMLSpanElement>(null);
-  const stageRef = useRef<HTMLSpanElement>(null);
-  const [saveData] = useState(() => {
-    if (typeof navigator === 'undefined') return false;
-    const connection = (navigator as Navigator & { connection?: ConnectionWithSaveData }).connection;
-    return Boolean(connection?.saveData);
-  });
-
-  const staticMode = reduceMotion || saveData;
-
-  useEffect(() => {
-    if (staticMode) return;
-
-    let animationFrame = 0;
-    let lastPercent = -1;
-    let lastStage = -1;
-
-    const update = () => {
-      animationFrame = 0;
-      const hero = heroRef.current;
-      if (!hero) return;
-
-      const rect = hero.getBoundingClientRect();
-      const range = Math.max(hero.offsetHeight - window.innerHeight, 1);
-      const progress = clamp(-rect.top / range);
-      const firstBlend = clamp(progress / 0.48);
-      const secondBlend = clamp((progress - 0.48) / 0.52);
-      const opacities = [1 - firstBlend, firstBlend * (1 - secondBlend), secondBlend];
-
-      frameRefs.current.forEach((frame, index) => {
-        if (!frame) return;
-        frame.style.opacity = String(opacities[index]);
-        frame.style.transform = `scale(${1.045 - progress * 0.045 + index * 0.004}) translate3d(${(index - 1) * progress * 0.55}%, ${progress * -0.85}%, 0)`;
-      });
-
-      if (introRef.current) {
-        introRef.current.style.opacity = String(1 - clamp((progress - 0.72) / 0.28) * 0.24);
-        introRef.current.style.transform = `translate3d(0, ${progress * -20}px, 0)`;
-      }
-      if (progressBarRef.current) progressBarRef.current.style.transform = `scaleY(${progress})`;
-
-      const percent = Math.round(progress * 100);
-      if (percent !== lastPercent && progressTextRef.current) {
-        progressTextRef.current.textContent = `${String(percent).padStart(3, '0')}%`;
-        lastPercent = percent;
-      }
-      const stage = progress < 0.34 ? 0 : progress < 0.7 ? 1 : 2;
-      if (stage !== lastStage && stageRef.current) {
-        stageRef.current.textContent = [
-          '01 · DAYLIGHT — OPENING FRAME',
-          '02 · LIGHT — IN TRANSITION',
-          '03 · EVENING — FINAL VIEW',
-        ][stage];
-        lastStage = stage;
-      }
-    };
-    const scheduleUpdate = () => {
-      if (!animationFrame) animationFrame = requestAnimationFrame(update);
-    };
-
-    scheduleUpdate();
-    window.addEventListener('scroll', scheduleUpdate, { passive: true });
-    window.addEventListener('resize', scheduleUpdate);
-    return () => {
-      window.removeEventListener('scroll', scheduleUpdate);
-      window.removeEventListener('resize', scheduleUpdate);
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-    };
-  }, [staticMode]);
-
-  return <section id="overview" ref={heroRef} className={`hero-scroll ${staticMode ? 'reduced' : ''}`} aria-label="Architectural home study">
+function HeroVideo({ reduceMotion }: { reduceMotion: boolean }) {
+  return <section id="overview" className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`} aria-label="Architectural home study">
     <div className="hero-sticky">
-      <div className="hero-frames" aria-hidden="true">
-        {heroFrames.map((src, index) => {
-          // Native layers are intentional: the browser composites them directly during scroll.
-          // eslint-disable-next-line @next/next/no-img-element
-          return <img
-            key={src}
-            ref={(element) => { frameRefs.current[index] = element; }}
-            className={`hero-frame ${index === heroFrames.length - 1 ? 'hero-frame-final' : ''}`}
-            src={src}
-            alt=""
-            decoding="async"
-            loading="eager"
-            fetchPriority={index === 0 ? 'high' : 'low'}
-          />;
-        })}
-      </div>
+      <video src="/house-build.mp4" poster="/blueprint.png" preload="metadata" autoPlay loop muted playsInline aria-hidden="true" />
       <div className="hero-overlay" />
       <div className="hero-grid" />
       <div className="hero-content">
-        <div ref={introRef} className="hero-intro">
+        <div className="hero-intro">
           <p className="eyebrow">Axiom concept study — 01</p>
           <h1>ARCHITECTED<br /><em>TO EXIST</em></h1>
           <p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p>
           <div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div>
         </div>
-        <div className="hero-progress" aria-hidden="true"><div><span>{staticMode ? 'Static architectural view' : 'Scroll to reveal the home'}</span><strong ref={stageRef}>01 · DAYLIGHT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>{staticMode ? '100%' : '000%'}</b><i><span ref={progressBarRef} /></i></div></div>
+        <div className="hero-progress" aria-hidden="true"><div><span>{reduceMotion ? 'Architectural blueprint' : 'Motion study'}</span><strong>{reduceMotion ? '01 · BLUEPRINT — STATIC VIEW' : '01 · HOUSE STUDY — FILM LOOP'}</strong></div></div>
         <div className="hero-scroll-hint" aria-hidden="true">Scroll <ArrowDown size={14} aria-hidden="true" /></div>
       </div>
     </div>
@@ -181,9 +83,7 @@ export default function ProductionHome() {
   const selectedLayout = layoutOptions.find((item) => item.id === layout) ?? layoutOptions[0];
   const price = useMemo(() => 420000 + selectedFacade.delta + selectedRoof.delta + selectedLayout.delta, [selectedFacade, selectedRoof, selectedLayout]);
   const summary = `${selectedFacade.label}, ${selectedRoof.label}, ${selectedLayout.label}; illustrative estimate ${usd.format(price)}.`;
-  const visual = facade === 'metal' || roof === 'green'
-    ? { src: '/unsplash-white-house.jpg', credit: 'RETRATO INMOBILIARIO / Unsplash', href: 'https://unsplash.com/photos/modern-white-house-with-illuminated-pathway-at-dusk-eLG6MsOeupk' }
-    : { src: '/unsplash-luxury-windows.jpg', credit: 'Michael Brown / Unsplash', href: 'https://unsplash.com/photos/modern-luxury-home-with-large-windows-at-dusk-G48h926L2qo' };
+  const visual = { src: '/blueprint.png', label: 'Architectural blueprint' };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -225,11 +125,11 @@ export default function ProductionHome() {
       </header>
       <AnimatePresence>{menuOpen && <motion.nav ref={menuRef} id="mobile-menu" className="mobile-nav" aria-label="Mobile navigation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: .98 }} animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: .985 }} transition={reduceMotion ? { duration: .12 } : { type: 'spring', bounce: 0, duration: .32 }}><a href="#overview" onClick={() => setMenuOpen(false)}>Overview</a><a href="#specs" onClick={() => setMenuOpen(false)}>Technical readout</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Configure the house</a><a href="#brief" onClick={() => setMenuOpen(false)}>Start a build</a></motion.nav>}</AnimatePresence>
 
-      <HeroSequence reduceMotion={reduceMotion} />
+      <HeroVideo reduceMotion={reduceMotion} />
 
       <section id="specs" className="axiom-section specs-section"><div className="content-wrap"><p className="eyebrow">Technical readout</p><h2>Engineered<br />beyond tolerance.</h2><p className="section-copy">The house is measured twice: once as a system, and once as a feeling. Every layer is calibrated for light, comfort and long-term energy.</p><div className="spec-grid">{specs.map(([value, label, copy], index) => <motion.article key={label} className="spec-card" initial={reduceMotion ? false : { opacity: 0, y: 20 }} whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }} viewport={{ once: true, amount: .35 }} transition={{ ...selectionSpring, delay: index * .05 }}><span>{index === 0 ? <Compass size={17} aria-hidden="true" /> : index === 1 ? <Sparkles size={17} aria-hidden="true" /> : index === 2 ? <Zap size={17} aria-hidden="true" /> : <Cpu size={17} aria-hidden="true" />}</span><b>{value}</b><strong>{label}</strong><p>{copy}</p></motion.article>)}</div></div></section>
 
-      <section id="showcase" className="axiom-section showcase-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Construction showcase</p><h2>Tune the<br />composition.</h2></div><p>Choose the outer expression, the roof logic and the way the rooms open to the garden.</p></div><div className="showcase-grid"><div className="preview-card"><AnimatePresence mode="wait"><motion.img key={visual.src} src={visual.src} alt={`Preview: ${selectedFacade.label}, ${selectedRoof.label}, ${selectedLayout.label} plan`} loading="lazy" decoding="async" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.025 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={selectionSpring} /></AnimatePresence><div className="preview-scrim" /><div className="preview-content"><div className="preview-kicker"><span>House 01 / visual study</span><b>CONCEPT</b></div><span className="preview-tag"><b>{selectedFacade.label}</b> / {selectedRoof.label}</span><div className="preview-price"><div><span>Illustrative estimate</span><b>{usd.format(price)}</b><small>{selectedLayout.label} plan / 240 m²</small><a href={visual.href} target="_blank" rel="noreferrer">Photo / {visual.credit}</a></div><i>A+ / passive</i></div></div></div><div className="controls"><OptionGroup title="Facade" name="facade" options={facadeOptions} value={facade} onChange={setFacade} /><OptionGroup title="Roof material" name="roof" options={roofOptions} value={roof} onChange={setRoof} /><OptionGroup title="Plan logic" name="layout" options={layoutOptions} value={layout} onChange={setLayout} /><div className="selection-summary"><b>Your composition</b><p>{summary}</p><a href="#brief">Continue to build brief <ArrowRight size={16} aria-hidden="true" /></a></div></div></div><p className="sr-only" aria-live="polite" aria-atomic="true">Configuration updated: {summary}</p></div></section>
+      <section id="showcase" className="axiom-section showcase-section"><div className="content-wrap"><div className="section-heading"><div><p className="eyebrow">Construction showcase</p><h2>Tune the<br />composition.</h2></div><p>Choose the outer expression, the roof logic and the way the rooms open to the garden.</p></div><div className="showcase-grid"><div className="preview-card"><AnimatePresence mode="wait"><motion.img key={visual.src} src={visual.src} alt={`${visual.label}: ${selectedFacade.label}, ${selectedRoof.label}, ${selectedLayout.label} plan`} loading="lazy" decoding="async" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.025 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={selectionSpring} /></AnimatePresence><div className="preview-scrim" /><div className="preview-content"><div className="preview-kicker"><span>Architectural drawing / concept study</span><b>BLUEPRINT</b></div><span className="preview-tag"><b>{selectedFacade.label}</b> / {selectedRoof.label}</span><div className="preview-price"><div><span>Illustrative estimate</span><b>{usd.format(price)}</b><small>{selectedLayout.label} plan / 240 m²</small></div><i>A+ / passive</i></div></div></div><div className="controls"><OptionGroup title="Facade" name="facade" options={facadeOptions} value={facade} onChange={setFacade} /><OptionGroup title="Roof material" name="roof" options={roofOptions} value={roof} onChange={setRoof} /><OptionGroup title="Plan logic" name="layout" options={layoutOptions} value={layout} onChange={setLayout} /><div className="selection-summary"><b>Your composition</b><p>{summary}</p><a href="#brief">Continue to build brief <ArrowRight size={16} aria-hidden="true" /></a></div></div></div><p className="sr-only" aria-live="polite" aria-atomic="true">Configuration updated: {summary}</p></div></section>
 
       <section className="axiom-section note-section"><div className="content-wrap note-wrap"><p className="eyebrow">Design intent / 01</p><blockquote>“The most intelligent house is the one that disappears into the way you live.”</blockquote><p>This is an original interaction and visual-direction study. The architecture, people, prices and specifications shown on this page are illustrative, not an offer for construction.</p></div></section>
 

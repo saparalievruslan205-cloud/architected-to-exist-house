@@ -43,14 +43,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .button:disabled { cursor: wait; opacity: .58; }
 .desktop-cta { display: none; }
 
-.hero-scroll { position: relative; height: 220vh; }
+.hero-scroll { position: relative; height: 100svh; }
 .hero-scroll.reduced { height: 100svh; }
-.hero-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #d7d6d0; contain: paint; }
-.hero-frames { position: absolute; inset: 0; overflow: hidden; }
-.hero-frame { position: absolute; inset: -3%; width: 106%; height: 106%; object-fit: cover; opacity: 0; transform: scale(1.045) translate3d(0, 0, 0); will-change: transform, opacity; }
-.hero-frame:first-child { opacity: 1; }
-.hero-scroll.reduced .hero-frame { opacity: 0 !important; transform: scale(1) !important; }
-.hero-scroll.reduced .hero-frame-final { opacity: 1 !important; }
+.hero-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #d7d6d0 url('/blueprint.png') center / cover no-repeat; contain: paint; }
+.hero-sticky video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .66; filter: saturate(.72) contrast(.92) brightness(1.08); }
+.hero-scroll.reduced video { opacity: 0; }
 .hero-overlay { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 50% 43%, transparent 0, rgba(3,7,11,.12) 45%, rgba(3,7,11,.86) 100%), linear-gradient(180deg,rgba(3,7,11,.82),rgba(3,7,11,.14) 34%,rgba(3,7,11,.34) 68%,rgba(3,7,11,.95)); }
 .hero-grid { position: absolute; inset: 0; z-index: 1; opacity: .22; background-image: linear-gradient(rgba(72,202,220,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(72,202,220,.1) 1px, transparent 1px); background-size: 72px 72px; mask-image: radial-gradient(circle at center, black, transparent 75%); }
 .hero-content { position: relative; z-index: 2; display: flex; height: 100%; flex-direction: column; justify-content: center; padding: 5rem 1.25rem 1.75rem; }
@@ -177,7 +174,7 @@ html, body, .axiom-page { background: var(--axiom-bg); color: var(--axiom-text);
 .button.secondary { border-color: rgba(169,86,53,.5); color: var(--axiom-accent); }
 .button.ghost { border-color: rgba(29,41,40,.3); color: var(--axiom-text); }
 .button.ghost:hover { border-color: var(--axiom-accent); background: rgba(169,86,53,.08); }
-.hero-sticky { background: #ddd8cf; }
+.hero-sticky { background: #ddd8cf url('/blueprint.png') center / cover no-repeat; }
 .hero-sticky video { opacity: .62; filter: saturate(.72) contrast(.92) brightness(1.08); }
 .hero-overlay { background: linear-gradient(180deg, rgba(244,241,235,.76), rgba(244,241,235,.16) 34%, rgba(244,241,235,.22) 68%, rgba(244,241,235,.9)); }
 .hero-grid { opacity: .42; background-image: linear-gradient(rgba(169,86,53,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(169,86,53,.12) 1px, transparent 1px); }
@@ -256,7 +253,7 @@ html, body, .axiom-page { background: var(--axiom-bg); color: var(--axiom-text);
 .showcase-section, #showcase { background: radial-gradient(circle at 85% 10%, rgba(154,93,67,.08), transparent 28%), linear-gradient(180deg, #fcfdf9, #eef1eb) !important; }
 
 @media (max-width: 639px) {
-  .hero-scroll { height: 185svh; }
+  .hero-scroll { height: 100svh; }
   .axiom-header { background: rgba(245,247,243,.96); backdrop-filter: none; }
 }
 
