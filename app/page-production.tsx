@@ -34,6 +34,7 @@ type Option = { id: string; label: string; copy: string; delta: number };
 
 const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const selectionSpring = { type: 'spring' as const, bounce: 0, duration: 0.42 };
+const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
 
 function validate(form: FormData): FormErrors {
   const name = String(form.get('name') ?? '').trim();
@@ -48,9 +49,75 @@ function validate(form: FormData): FormErrors {
 }
 
 function HeroVideo({ reduceMotion }: { reduceMotion: boolean }) {
+  const heroRef = useRef<HTMLElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const progressBarRef = useRef<HTMLSpanElement>(null);
+  const progressTextRef = useRef<HTMLSpanElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const hero = heroRef.current;
+    const video = videoRef.current;
+    if (!hero || !video) return;
+
+    let animationFrame = 0;
+    let progress = 0;
+    let lastRequestedTime = -1;
+
+    const render = () => {
+      animationFrame = 0;
+      const rect = hero.getBoundingClientRect();
+      const range = Math.max(hero.offsetHeight - window.innerHeight, 1);
+      progress = clamp(-rect.top / range);
+
+      if (progressBarRef.current) progressBarRef.current.style.transform = `scaleY(${progress})`;
+      if (progressTextRef.current) progressTextRef.current.textContent = `${String(Math.round(progress * 100)).padStart(3, '0')}%`;
+      if (stageRef.current) {
+        stageRef.current.textContent = progress < .34
+          ? '01 · BLUEPRINT — OPENING FRAME'
+          : progress < .72 ? '02 · STRUCTURE — IN PROGRESS' : '03 · HOUSE — FINAL FRAME';
+      }
+
+      if (reduceMotion || !Number.isFinite(video.duration) || video.duration <= 0 || video.seeking) return;
+      const targetTime = progress * Math.max(video.duration - .08, 0);
+
+      // Seeking on every wheel event overwhelms video decoding. One coalesced, meaningful
+      // request per rendered frame keeps the scroll-linked film responsive without a seek backlog.
+      if (Math.abs(targetTime - lastRequestedTime) >= .08 && Math.abs(video.currentTime - targetTime) >= .08) {
+        lastRequestedTime = targetTime;
+        video.currentTime = targetTime;
+      }
+    };
+
+    const requestRender = () => {
+      if (animationFrame === 0) animationFrame = requestAnimationFrame(render);
+    };
+    const resumeQueuedSeek = () => requestRender();
+
+    video.pause();
+    if (reduceMotion) {
+      video.currentTime = 0;
+      return undefined;
+    }
+
+    video.addEventListener('loadedmetadata', requestRender);
+    video.addEventListener('seeked', resumeQueuedSeek);
+    window.addEventListener('scroll', requestRender, { passive: true });
+    window.addEventListener('resize', requestRender);
+    requestRender();
+
+    return () => {
+      video.removeEventListener('loadedmetadata', requestRender);
+      video.removeEventListener('seeked', resumeQueuedSeek);
+      window.removeEventListener('scroll', requestRender);
+      window.removeEventListener('resize', requestRender);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [reduceMotion]);
+
   return <section id="overview" className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`} aria-label="Architectural home study">
-    <div className="hero-sticky">
-      <video src="/house-build.mp4" poster="/blueprint.png" preload="metadata" autoPlay loop muted playsInline aria-hidden="true" />
+    <div ref={heroRef} className="hero-sticky">
+      <video ref={videoRef} src="/house-build.mp4" poster="/blueprint.png" preload="auto" muted playsInline aria-hidden="true" />
       <div className="hero-overlay" />
       <div className="hero-grid" />
       <div className="hero-content">
@@ -60,7 +127,7 @@ function HeroVideo({ reduceMotion }: { reduceMotion: boolean }) {
           <p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p>
           <div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div>
         </div>
-        <div className="hero-progress" aria-hidden="true"><div><span>{reduceMotion ? 'Architectural blueprint' : 'Motion study'}</span><strong>{reduceMotion ? '01 · BLUEPRINT — STATIC VIEW' : '01 · HOUSE STUDY — FILM LOOP'}</strong></div></div>
+        <div className="hero-progress" aria-hidden="true"><div><span>{reduceMotion ? 'Architectural blueprint' : 'Scroll to control film'}</span><strong ref={stageRef}>{reduceMotion ? '01 · BLUEPRINT — STATIC VIEW' : '01 · BLUEPRINT — OPENING FRAME'}</strong></div><div className="progress-meter"><b ref={progressTextRef}>{reduceMotion ? '100%' : '000%'}</b><i><span ref={progressBarRef} /></i></div></div>
         <div className="hero-scroll-hint" aria-hidden="true">Scroll <ArrowDown size={14} aria-hidden="true" /></div>
       </div>
     </div>
