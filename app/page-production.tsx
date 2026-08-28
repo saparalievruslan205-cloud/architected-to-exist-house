@@ -55,7 +55,10 @@ export default function ProductionHome() {
   const heroRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const seekFrameRef = useRef<number | null>(null);
+  const smoothFrameRef = useRef<number | null>(null);
   const pendingProgressRef = useRef(0);
+  const smoothedProgressRef = useRef(0);
+  const lastSmoothTimeRef = useRef(0);
   const pendingVideoTimeRef = useRef<number | null>(null);
   const videoSeekInFlightRef = useRef(false);
   const progressBarRef = useRef<HTMLSpanElement>(null);
@@ -115,10 +118,31 @@ export default function ProductionHome() {
     const continueVideoSeek = () => {
       videoSeekInFlightRef.current = false;
       if (pendingVideoTimeRef.current !== null) scheduleVideoSeek();
+      if (Math.abs(pendingProgressRef.current - smoothedProgressRef.current) > .001) scheduleSmoothVideo();
     };
+    function scheduleSmoothVideo() {
+      if (smoothFrameRef.current !== null) return;
+      smoothFrameRef.current = requestAnimationFrame((now) => {
+        smoothFrameRef.current = null;
+        const elapsed = Math.min(Math.max(now - lastSmoothTimeRef.current, 0), 64);
+        lastSmoothTimeRef.current = now;
+        const target = pendingProgressRef.current;
+        const delta = target - smoothedProgressRef.current;
+        const easing = 1 - Math.exp(-elapsed / 90);
+        const next = Math.abs(delta) < .001 ? target : smoothedProgressRef.current + delta * easing;
+        smoothedProgressRef.current = next;
+        const currentVideo = videoRef.current;
+        if (currentVideo && Number.isFinite(currentVideo.duration) && currentVideo.duration > 0) {
+          pendingVideoTimeRef.current = next * currentVideo.duration;
+          scheduleVideoSeek();
+        }
+        if (Math.abs(target - next) > .001) scheduleSmoothVideo();
+      });
+    }
     const initializeVideoSeek = () => {
       const currentVideo = videoRef.current;
       if (!currentVideo || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
+      smoothedProgressRef.current = pendingProgressRef.current;
       pendingVideoTimeRef.current = pendingProgressRef.current * currentVideo.duration;
       scheduleVideoSeek();
     };
@@ -130,10 +154,7 @@ export default function ProductionHome() {
       if (stageRef.current) stageRef.current.textContent = progress < .3 ? '01 · BLUEPRINT — OPENING FRAME' : progress < .7 ? '02 · BUILD FILM — CONSTRUCTION' : '03 · FINAL ADDRESS — HANDOVER';
       if (reduceMotion) return;
       pendingProgressRef.current = progress;
-      const currentVideo = videoRef.current;
-      if (!currentVideo || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
-      pendingVideoTimeRef.current = pendingProgressRef.current * currentVideo.duration;
-      scheduleVideoSeek();
+      scheduleSmoothVideo();
     };
     if (reduceMotion) { update(1); return undefined; }
     gsap.registerPlugin(ScrollTrigger);
@@ -148,7 +169,9 @@ export default function ProductionHome() {
       video?.removeEventListener('loadedmetadata', initializeVideoSeek);
       video?.removeEventListener('seeked', continueVideoSeek);
       if (seekFrameRef.current !== null) cancelAnimationFrame(seekFrameRef.current);
+      if (smoothFrameRef.current !== null) cancelAnimationFrame(smoothFrameRef.current);
       seekFrameRef.current = null;
+      smoothFrameRef.current = null;
       pendingVideoTimeRef.current = null;
       videoSeekInFlightRef.current = false;
     };

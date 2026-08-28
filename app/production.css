@@ -251,3 +251,10 @@ html, body, .axiom-page { background: var(--axiom-bg); color: var(--axiom-text);
 .hero-overlay { background: linear-gradient(180deg, rgba(245,247,243,.72), rgba(245,247,243,.12) 34%, rgba(245,247,243,.22) 68%, rgba(245,247,243,.88)); }
 .specs-section, #specs { background: radial-gradient(circle at 14% 22%, rgba(107,145,130,.13), transparent 34%), linear-gradient(180deg, #f5f7f3, #e8eee9) !important; }
 .showcase-section, #showcase { background: radial-gradient(circle at 85% 10%, rgba(154,93,67,.08), transparent 28%), linear-gradient(180deg, #fcfdf9, #eef1eb) !important; }
+
+/* Keep the scroll film on the compositor; full-screen CSS filters are costly. */
+.hero-sticky { contain: paint; }
+.hero-sticky video { opacity: .66; filter: none; transform: translateZ(0); backface-visibility: hidden; will-change: opacity; }
+@media (max-width: 639px) {
+  .axiom-header { background: rgba(245,247,243,.96); backdrop-filter: none; }
+}
