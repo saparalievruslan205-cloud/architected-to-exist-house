@@ -54,6 +54,7 @@ export default function ProductionHome() {
   const reduceMotion = Boolean(useReducedMotion());
   const heroRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const blueprintRef = useRef<HTMLImageElement>(null);
   const seekFrameRef = useRef<number | null>(null);
   const smoothFrameRef = useRef<number | null>(null);
   const pendingProgressRef = useRef(0);
@@ -149,6 +150,7 @@ export default function ProductionHome() {
     const update = (raw: number) => {
       const progress = Math.min(Math.max(raw, 0), 1);
       scrollState.progress = progress;
+      if (blueprintRef.current) blueprintRef.current.style.opacity = String(reduceMotion ? 1 : 1 - Math.min(progress / .18, 1));
       if (progressBarRef.current) progressBarRef.current.style.transform = `scaleY(${progress})`;
       if (progressTextRef.current) progressTextRef.current.textContent = `${String(Math.round(progress * 100)).padStart(3, '0')}%`;
       if (stageRef.current) stageRef.current.textContent = progress < .3 ? '01 · BLUEPRINT — OPENING FRAME' : progress < .7 ? '02 · BUILD FILM — CONSTRUCTION' : '03 · FINAL ADDRESS — HANDOVER';
@@ -206,7 +208,12 @@ export default function ProductionHome() {
       </header>
       <AnimatePresence>{menuOpen && <motion.nav ref={menuRef} id="mobile-menu" className="mobile-nav" aria-label="Mobile navigation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: .98 }} animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: .985 }} transition={reduceMotion ? { duration: .12 } : { type: 'spring', bounce: 0, duration: .32 }}><a href="#overview" onClick={() => setMenuOpen(false)}>Overview</a><a href="#specs" onClick={() => setMenuOpen(false)}>Technical readout</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Configure the house</a><a href="#brief" onClick={() => setMenuOpen(false)}>Start a build</a></motion.nav>}</AnimatePresence>
 
-      <section id="overview" ref={heroRef} className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`}><div className="hero-sticky"><video ref={videoRef} src="/house-build.mp4" poster="/house-showcase-day.jpg" preload="auto" muted playsInline aria-hidden="true" /><div className="hero-overlay" /><div className="hero-grid" /><div className="hero-content"><div className="hero-intro"><p className="eyebrow">Axiom concept study — 01</p><h1>ARCHITECTED<br /><em>TO EXIST</em></h1><p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p><div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div></div><div className="hero-progress"><div><span>Scroll to control film</span><strong ref={stageRef}>01 · BLUEPRINT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>000%</b><i><span ref={progressBarRef} /></i></div></div><div className="hero-scroll-hint">Scroll <ArrowDown size={14} aria-hidden="true" /></div></div></div></section>
+      <section id="overview" ref={heroRef} className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`}><div className="hero-sticky">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img ref={blueprintRef} className="hero-blueprint" src="/blueprint.png" alt="" aria-hidden="true" fetchPriority="high" />
+        <video ref={videoRef} src="/house-build.mp4" poster="/blueprint.png" preload="auto" muted playsInline aria-hidden="true" />
+        <div className="hero-overlay" /><div className="hero-grid" /><div className="hero-content"><div className="hero-intro"><p className="eyebrow">Axiom concept study — 01</p><h1>ARCHITECTED<br /><em>TO EXIST</em></h1><p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p><div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div></div><div className="hero-progress"><div><span>Scroll to control film</span><strong ref={stageRef}>01 · BLUEPRINT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>000%</b><i><span ref={progressBarRef} /></i></div></div><div className="hero-scroll-hint">Scroll <ArrowDown size={14} aria-hidden="true" /></div></div>
+      </div></section>
 
       <section id="specs" className="axiom-section specs-section"><div className="content-wrap"><p className="eyebrow">Technical readout</p><h2>Engineered<br />beyond tolerance.</h2><p className="section-copy">The house is measured twice: once as a system, and once as a feeling. Every layer is calibrated for light, comfort and long-term energy.</p><div className="spec-grid">{specs.map(([value, label, copy], index) => <motion.article key={label} className="spec-card" initial={reduceMotion ? false : { opacity: 0, y: 20 }} whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }} viewport={{ once: true, amount: .35 }} transition={{ ...selectionSpring, delay: index * .05 }}><span>{index === 0 ? <Compass size={17} aria-hidden="true" /> : index === 1 ? <Sparkles size={17} aria-hidden="true" /> : index === 2 ? <Zap size={17} aria-hidden="true" /> : <Cpu size={17} aria-hidden="true" />}</span><b>{value}</b><strong>{label}</strong><p>{copy}</p></motion.article>)}</div></div></section>
 
