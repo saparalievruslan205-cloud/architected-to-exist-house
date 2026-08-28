@@ -56,6 +56,8 @@ export default function ProductionHome() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const seekFrameRef = useRef<number | null>(null);
   const pendingProgressRef = useRef(0);
+  const pendingVideoTimeRef = useRef<number | null>(null);
+  const videoSeekInFlightRef = useRef(false);
   const progressBarRef = useRef<HTMLSpanElement>(null);
   const progressTextRef = useRef<HTMLSpanElement>(null);
   const stageRef = useRef<HTMLSpanElement>(null);
@@ -91,6 +93,35 @@ export default function ProductionHome() {
   useEffect(() => {
     const hero = heroRef.current;
     if (!hero) return;
+    const video = videoRef.current;
+    const flushVideoSeek = () => {
+      seekFrameRef.current = null;
+      const currentVideo = videoRef.current;
+      const target = pendingVideoTimeRef.current;
+      if (!currentVideo || target === null || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
+      if (videoSeekInFlightRef.current || currentVideo.seeking) return;
+      if (Math.abs(currentVideo.currentTime - target) < 1 / 30) {
+        pendingVideoTimeRef.current = null;
+        return;
+      }
+      pendingVideoTimeRef.current = null;
+      videoSeekInFlightRef.current = true;
+      currentVideo.currentTime = target;
+    };
+    const scheduleVideoSeek = () => {
+      if (seekFrameRef.current !== null) return;
+      seekFrameRef.current = requestAnimationFrame(flushVideoSeek);
+    };
+    const continueVideoSeek = () => {
+      videoSeekInFlightRef.current = false;
+      if (pendingVideoTimeRef.current !== null) scheduleVideoSeek();
+    };
+    const initializeVideoSeek = () => {
+      const currentVideo = videoRef.current;
+      if (!currentVideo || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
+      pendingVideoTimeRef.current = pendingProgressRef.current * currentVideo.duration;
+      scheduleVideoSeek();
+    };
     const update = (raw: number) => {
       const progress = Math.min(Math.max(raw, 0), 1);
       scrollState.progress = progress;
@@ -99,21 +130,28 @@ export default function ProductionHome() {
       if (stageRef.current) stageRef.current.textContent = progress < .3 ? '01 · BLUEPRINT — OPENING FRAME' : progress < .7 ? '02 · BUILD FILM — CONSTRUCTION' : '03 · FINAL ADDRESS — HANDOVER';
       if (reduceMotion) return;
       pendingProgressRef.current = progress;
-      if (seekFrameRef.current !== null) return;
-      seekFrameRef.current = requestAnimationFrame(() => {
-        seekFrameRef.current = null;
-        const video = videoRef.current;
-        if (!video || !Number.isFinite(video.duration) || video.duration <= 0) return;
-        const target = pendingProgressRef.current * video.duration;
-        if (Math.abs(video.currentTime - target) > .016) video.currentTime = target;
-      });
+      const currentVideo = videoRef.current;
+      if (!currentVideo || !Number.isFinite(currentVideo.duration) || currentVideo.duration <= 0) return;
+      pendingVideoTimeRef.current = pendingProgressRef.current * currentVideo.duration;
+      scheduleVideoSeek();
     };
     if (reduceMotion) { update(1); return undefined; }
     gsap.registerPlugin(ScrollTrigger);
+    ScrollTrigger.config({ limitCallbacks: true, ignoreMobileResize: true });
+    video?.addEventListener('loadedmetadata', initializeVideoSeek);
+    video?.addEventListener('seeked', continueVideoSeek);
     const trigger = ScrollTrigger.create({ trigger: hero, start: 'top top', end: 'bottom bottom', onUpdate: (self) => update(self.progress) });
     update(trigger.progress);
     ScrollTrigger.refresh();
-    return () => { trigger.kill(); if (seekFrameRef.current !== null) cancelAnimationFrame(seekFrameRef.current); };
+    return () => {
+      trigger.kill();
+      video?.removeEventListener('loadedmetadata', initializeVideoSeek);
+      video?.removeEventListener('seeked', continueVideoSeek);
+      if (seekFrameRef.current !== null) cancelAnimationFrame(seekFrameRef.current);
+      seekFrameRef.current = null;
+      pendingVideoTimeRef.current = null;
+      videoSeekInFlightRef.current = false;
+    };
   }, [reduceMotion]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -145,7 +183,7 @@ export default function ProductionHome() {
       </header>
       <AnimatePresence>{menuOpen && <motion.nav ref={menuRef} id="mobile-menu" className="mobile-nav" aria-label="Mobile navigation" initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -10, scale: .98 }} animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }} exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: .985 }} transition={reduceMotion ? { duration: .12 } : { type: 'spring', bounce: 0, duration: .32 }}><a href="#overview" onClick={() => setMenuOpen(false)}>Overview</a><a href="#specs" onClick={() => setMenuOpen(false)}>Technical readout</a><a href="#showcase" onClick={() => setMenuOpen(false)}>Configure the house</a><a href="#brief" onClick={() => setMenuOpen(false)}>Start a build</a></motion.nav>}</AnimatePresence>
 
-      <section id="overview" ref={heroRef} className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`}><div className="hero-sticky"><video ref={videoRef} src="/house-build.mp4" poster="/house-showcase-day.jpg" preload="metadata" muted playsInline aria-hidden="true" /><div className="hero-overlay" /><div className="hero-grid" /><div className="hero-content"><div className="hero-intro"><p className="eyebrow">Axiom concept study — 01</p><h1>ARCHITECTED<br /><em>TO EXIST</em></h1><p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p><div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div></div><div className="hero-progress"><div><span>Scroll to control film</span><strong ref={stageRef}>01 · BLUEPRINT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>000%</b><i><span ref={progressBarRef} /></i></div></div><div className="hero-scroll-hint">Scroll <ArrowDown size={14} aria-hidden="true" /></div></div></div></section>
+      <section id="overview" ref={heroRef} className={`hero-scroll ${reduceMotion ? 'reduced' : ''}`}><div className="hero-sticky"><video ref={videoRef} src="/house-build.mp4" poster="/house-showcase-day.jpg" preload="auto" muted playsInline aria-hidden="true" /><div className="hero-overlay" /><div className="hero-grid" /><div className="hero-content"><div className="hero-intro"><p className="eyebrow">Axiom concept study — 01</p><h1>ARCHITECTED<br /><em>TO EXIST</em></h1><p>A modern house assembled in light, structure and time. Scroll to move from coordinate lines to a living address.</p><div className="hero-ctas"><a className="button primary" href="#specs">Technical readout <ArrowRight size={16} aria-hidden="true" /></a><a className="button ghost" href="#showcase">Configure the house <ChevronDown size={16} aria-hidden="true" /></a></div></div><div className="hero-progress"><div><span>Scroll to control film</span><strong ref={stageRef}>01 · BLUEPRINT — OPENING FRAME</strong></div><div className="progress-meter"><b ref={progressTextRef}>000%</b><i><span ref={progressBarRef} /></i></div></div><div className="hero-scroll-hint">Scroll <ArrowDown size={14} aria-hidden="true" /></div></div></div></section>
 
       <section id="specs" className="axiom-section specs-section"><div className="content-wrap"><p className="eyebrow">Technical readout</p><h2>Engineered<br />beyond tolerance.</h2><p className="section-copy">The house is measured twice: once as a system, and once as a feeling. Every layer is calibrated for light, comfort and long-term energy.</p><div className="spec-grid">{specs.map(([value, label, copy], index) => <motion.article key={label} className="spec-card" initial={reduceMotion ? false : { opacity: 0, y: 20 }} whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }} viewport={{ once: true, amount: .35 }} transition={{ ...selectionSpring, delay: index * .05 }}><span>{index === 0 ? <Compass size={17} aria-hidden="true" /> : index === 1 ? <Sparkles size={17} aria-hidden="true" /> : index === 2 ? <Zap size={17} aria-hidden="true" /> : <Cpu size={17} aria-hidden="true" />}</span><b>{value}</b><strong>{label}</strong><p>{copy}</p></motion.article>)}</div></div></section>
 
