@@ -45,14 +45,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 
 .hero-scroll { position: relative; height: 270vh; }
 .hero-scroll.reduced { height: 100svh; }
-.hero-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #e5e9e8; }
-.hero-sticky video, .hero-blueprint { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.hero-sticky video { z-index: 0; opacity: .8; }
-.hero-blueprint { z-index: 1; object-position: center; opacity: 1; }
+.hero-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #050a0e; }
+.hero-sticky video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .8; }
 .hero-scroll.reduced video { opacity: .45; }
-.hero-overlay { position: absolute; inset: 0; z-index: 2; background: radial-gradient(circle at 50% 43%, transparent 0, rgba(3,7,11,.12) 45%, rgba(3,7,11,.86) 100%), linear-gradient(180deg,rgba(3,7,11,.82),rgba(3,7,11,.14) 34%,rgba(3,7,11,.34) 68%,rgba(3,7,11,.95)); }
-.hero-grid { position: absolute; inset: 0; z-index: 2; opacity: .22; background-image: linear-gradient(rgba(72,202,220,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(72,202,220,.1) 1px, transparent 1px); background-size: 72px 72px; mask-image: radial-gradient(circle at center, black, transparent 75%); }
-.hero-content { position: relative; z-index: 3; display: flex; height: 100%; flex-direction: column; justify-content: center; padding: 5rem 1.25rem 1.75rem; }
+.hero-overlay { position: absolute; inset: 0; z-index: 1; background: radial-gradient(circle at 50% 43%, transparent 0, rgba(3,7,11,.12) 45%, rgba(3,7,11,.86) 100%), linear-gradient(180deg,rgba(3,7,11,.82),rgba(3,7,11,.14) 34%,rgba(3,7,11,.34) 68%,rgba(3,7,11,.95)); }
+.hero-grid { position: absolute; inset: 0; z-index: 1; opacity: .22; background-image: linear-gradient(rgba(72,202,220,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(72,202,220,.1) 1px, transparent 1px); background-size: 72px 72px; mask-image: radial-gradient(circle at center, black, transparent 75%); }
+.hero-content { position: relative; z-index: 2; display: flex; height: 100%; flex-direction: column; justify-content: center; padding: 5rem 1.25rem 1.75rem; }
 .hero-intro { max-width: 64rem; margin: 0 auto; text-align: center; will-change: transform, opacity; }
 .eyebrow { margin: 0; color: var(--axiom-accent); font-size: .75rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; }
 .hero-intro h1, .axiom-section h2 { margin: 1.35rem 0 0; font-weight: 650; line-height: .86; letter-spacing: -.08em; text-wrap: balance; }
@@ -243,27 +241,16 @@ html, body, .axiom-page { background: var(--axiom-bg); color: var(--axiom-text);
   .option > span { min-height: 7.4rem; border-radius: .85rem; padding: .85rem; }
 }
 
-/* Blueprint editorial palette: warm paper, ink, and a single confident blue. */
-:root { --axiom-bg: #f1f3f4; --axiom-surface: #fbfcfc; --axiom-surface-2: #e2e7e8; --axiom-text: #172522; --axiom-text-muted: #52615f; --axiom-accent: #155c89; --axiom-ink: #ffffff; --axiom-border: rgba(23,37,34,.16); --axiom-focus: #2f76a1; --axiom-shadow: 0 22px 72px rgba(23,37,34,.12), inset 0 1px 0 rgba(255,255,255,.9); }
+/* Palette refinement: calmer stone, copper, and sage balance. */
+:root { --axiom-bg: #f5f7f3; --axiom-surface: #fcfdf9; --axiom-surface-2: #e7ede8; --axiom-text: #253331; --axiom-text-muted: #61706c; --axiom-accent: #9a5d43; --axiom-ink: #fffdf8; --axiom-border: rgba(37,51,49,.15); --axiom-focus: #b57455; --axiom-shadow: 0 22px 72px rgba(53,64,58,.13), inset 0 1px 0 rgba(255,255,255,.86); }
 html, body, .axiom-page { background: var(--axiom-bg); color: var(--axiom-text); }
-::selection { background: rgba(21,92,137,.18); }
-.axiom-header { background: rgba(241,243,244,.88); border-bottom-color: rgba(23,37,34,.1); }
-.axiom-brand > span { border-color: rgba(21,92,137,.4); background: rgba(21,92,137,.08); }
-.mobile-nav { border-color: rgba(21,92,137,.3); }
-.mobile-nav a:hover, .mobile-nav a:focus-visible, .button.ghost:hover { background: rgba(21,92,137,.08); }
-.button.primary { background: var(--axiom-accent); border-color: var(--axiom-accent); box-shadow: 0 10px 28px rgba(21,92,137,.18); }
-.button.primary:hover { background: #0d4569; }
-.button.secondary { border-color: rgba(21,92,137,.5); }
-.hero-overlay { background: linear-gradient(180deg, rgba(241,243,244,.68), rgba(241,243,244,.1) 34%, rgba(241,243,244,.22) 68%, rgba(241,243,244,.9)); }
-.hero-grid { background-image: linear-gradient(rgba(21,92,137,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(21,92,137,.16) 1px, transparent 1px); }
-.axiom-section::before { background-image: linear-gradient(rgba(82,97,95,.08) 1px, transparent 1px), linear-gradient(90deg, rgba(82,97,95,.08) 1px, transparent 1px); }
-.specs-section, #specs { background: radial-gradient(circle at 14% 22%, rgba(21,92,137,.11), transparent 34%), linear-gradient(180deg, #f1f3f4, #e4e9ea) !important; }
-.showcase-section, #showcase { background: radial-gradient(circle at 85% 10%, rgba(21,92,137,.08), transparent 28%), linear-gradient(180deg, #fbfcfc, #edf1f2) !important; }
-.note-section, #testimonial { background: radial-gradient(circle at 76% 46%, rgba(21,92,137,.08), transparent 26%), linear-gradient(180deg, #edf1f2, #e2e7e8) !important; }
-.brief-section, #preorder { background: linear-gradient(118deg, rgba(21,92,137,.09), transparent 40%), linear-gradient(180deg, #e2e7e8, #f1f3f4) !important; }
-.spec-card > span, .selection-summary { border-color: rgba(21,92,137,.28); background: rgba(21,92,137,.07); }
-.spec-card:hover, .option:hover > span { border-color: rgba(21,92,137,.42); }
-.option input:checked + span { border-color: rgba(21,92,137,.62); background: linear-gradient(105deg, rgba(21,92,137,.12), rgba(21,92,137,.03)); }
+.axiom-header { background: rgba(245,247,243,.86); border-bottom-color: rgba(37,51,49,.1); }
+.axiom-brand > span { border-color: rgba(154,93,67,.4); background: rgba(154,93,67,.08); }
+.button.primary { background: var(--axiom-accent); border-color: var(--axiom-accent); box-shadow: 0 10px 28px rgba(154,93,67,.18); }
+.button.primary:hover { background: #824b35; }
+.hero-overlay { background: linear-gradient(180deg, rgba(245,247,243,.72), rgba(245,247,243,.12) 34%, rgba(245,247,243,.22) 68%, rgba(245,247,243,.88)); }
+.specs-section, #specs { background: radial-gradient(circle at 14% 22%, rgba(107,145,130,.13), transparent 34%), linear-gradient(180deg, #f5f7f3, #e8eee9) !important; }
+.showcase-section, #showcase { background: radial-gradient(circle at 85% 10%, rgba(154,93,67,.08), transparent 28%), linear-gradient(180deg, #fcfdf9, #eef1eb) !important; }
 
 /* Keep the scroll film on the compositor; full-screen CSS filters are costly. */
 .hero-sticky { contain: paint; }
